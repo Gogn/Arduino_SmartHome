@@ -3,19 +3,15 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
-
-////////////////////Setup//////////////////////
+////////////////////Setup_Params//////////////////////
 #define desiredHumidity 25
 #define humidityGap 5 //humidity can change within this value (protect relay/humidifier from to much switching)
-
-
-////////////////////SetUp//////////////////////
-
-
+////////////////////Setup_Params//////////////////////
 
 
 ////////////////////MH-Z19B//////////////////////
 SoftwareSerial SoftwareSerial(10, 11);
+
 byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79}; 
 unsigned char response[9];
 ////////////////////MH-Z19B//////////////////////
@@ -25,8 +21,8 @@ unsigned char response[9];
 #define BME280RelayPin 4
 
 Adafruit_BME280 bme;
+int flagHumidifier = 0;
 ////////////////////BME-280/////////////////////
-
 
 ////////////////////MQ-7///////////////////////
 #define MQ7Pin 2    //the AOUT pin of the CO sensor goes into analog pin A0 of the arduino
@@ -39,6 +35,7 @@ int MQ7CO;
 int MQ7COLim;
 ////////////////////MQ-7///////////////////////
 
+
 void setup() {
     Serial.begin(9600);
     SoftwareSerial.begin(9600);
@@ -49,11 +46,14 @@ void setup() {
         Serial.println("Could not find a valid BME280 sensor, check wiring!");
         while (1);
     }
+
+    Serial.println("Starting Arduino_SmartHome_v0.1");
 }
+
 
 void loop() 
 {
-////////////////////MH-Z19B//////////////////я////
+////////////////////MH-Z19B//////////////////////
     SoftwareSerial.write(cmd, 9);
     memset(response, 0, 9);
     SoftwareSerial.readBytes(response, 9);
@@ -114,12 +114,14 @@ void loop()
 
 
 ////////////////////Relay///////////////////////
-    if ( humidify < (desiredHumidity - humidityGap) ) {
+    if ( humidify < (desiredHumidity - humidityGap) && !flagHumidifier) {
         digitalWrite(BME280RelayPin, 1);
+        flagHumidifier = 1;
         Serial.println("Humidifier On");
     }
-    if ( humidify > (desiredHumidity + humidityGap) ) {
+    if ( humidify > (desiredHumidity + humidityGap) && flagHumidifier) {
         digitalWrite(BME280RelayPin, 0);
+        flagHumidifier = 0;
         Serial.println("Humidifier Off");
     }
 ////////////////////Relay///////////////////////
