@@ -5,7 +5,7 @@
 
 ////////////////////Setup_Params//////////////////////
 #define desiredHumidity 25
-#define humidityGap 5 //humidity can change within this value (protect relay/humidifier from to much switching)
+#define humidityGap 3 //humidity can change within this value (protect relay/humidifier from to much switching)
 ////////////////////Setup_Params//////////////////////
 
 
@@ -28,9 +28,9 @@ int flagHumidifier = 0;
 #define MQ7Pin 2    //the AOUT pin of the CO sensor goes into analog pin A0 of the arduino
 #define MQ7RelayPin 3
 
-unsigned long timingMQ7; //timing for millis()
+unsigned long timingMQ7 = 4600000; //timing for millis()
 unsigned long timingHeatingMQ7;
-int flagMQ7Relay;
+int flagMQ7Relay = 0;
 int MQ7CO;
 int MQ7COLim;
 ////////////////////MQ-7///////////////////////
@@ -75,40 +75,35 @@ void loop()
 
 ////////////////////BME-280/////////////////////
     int humidify = bme.readHumidity();
-    Serial.println("Temperature = " + String(bme.readTemperature()) + "*C");
+    int temp = bme.readTemperature();
+    Serial.println("Temperature = " + String(temp) + "*C");
     Serial.println("Humidity = " + String(humidify) + "%");
     //Serial.print("Pressure = " + String(bme.readPressure() / 100.0F) + "hPa" + "\n");
     //Serial.print("Approx. Altitude = " + String(SEALEVELPRESSURE_HPA) + "m" + "\n");
 ////////////////////BME-280/////////////////////
 
 ////////////////////MQ-7///////////////////////
-    if (millis() - timingMQ7 > 3600000) { //3600000 millis = 60mins
+    if (abs(millis() - timingMQ7) >= 3600000) { //3600000 millis = 60mins
 
-        if (millis() - timingHeatingMQ7 > 60000 && flagMQ7Relay) { //read CO after MQ-7 heated (60sec)
-            //Serial.println(71);
-            //Serial.println(millis());
-            //Serial.println(timingHeatingMQ7);
-
-
+        if (millis() - timingHeatingMQ7 >= 60000 && flagMQ7Relay) { //read CO after MQ-7 heated (60sec)
             MQ7CO= analogRead(MQ7Pin);    //reads the analaog value from the CO sensor’s AOUT pin
+            Serial.println("CO value: " + String(MQ7CO));
+            delay(5000);
+            Serial.println("CO value: " + String(MQ7CO));
+            delay(5000);
             Serial.println("CO value: " + String(MQ7CO));
             digitalWrite(MQ7RelayPin, 0);
             timingHeatingMQ7 = 0;
             flagMQ7Relay = 0;
+            timingMQ7 = millis();
         } else {
-            //Serial.println(77);
-            //Serial.println(millis());
-            //Serial.println(timingHeatingMQ7);
-
             if (!flagMQ7Relay) {
                 digitalWrite(MQ7RelayPin, 1);
                 flagMQ7Relay = 1;
                 timingHeatingMQ7 = millis();
             }
-
         }
 
-        timingMQ7 = 0;
     }
 ////////////////////MQ-7///////////////////////
 
